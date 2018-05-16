@@ -25,5 +25,5 @@ bosh -e $BOSH_ENVIRONMENT -d cf deploy cf/cf-deployment/cf-deployment.yml \
   -o cf/cf-deployment/operations/scale-to-one-az.yml \
   -o cf/cf-deployment/operations/use-compiled-releases.yml \
   -o cf/cf-deployment/operations/aws.yml \
-  -o cf/operations/rename_disk_labels.yml \
+  -o cf/operations/rename-disk-labels.yml \
   -v system_domain=sys.$STACK_NAME.training.armakuni.co.uk
