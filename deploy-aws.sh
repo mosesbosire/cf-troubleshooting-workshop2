@@ -20,6 +20,7 @@ terraform apply \
   -var "my_ip=$MY_IP" \
   -var "stack_name=$STACK_NAME" \
   -var "availability_zone=$AVAILABILITY_ZONE" \
+  -var "hosted_zone_id=$HOSTED_ZONE_ID" \
   -state="$OUTPUT_PLAN" \
   "$TERRAFORM_DIR"
 

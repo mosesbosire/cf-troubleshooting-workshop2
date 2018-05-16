@@ -1,0 +1,7 @@
+---
+- type: replace
+  path: /instance_groups/name=diego-cell/vm_extensions
+  value: [cell_ephemeral_disk]
+- type: replace
+  path: /instance_groups/name=api/vm_extensions
+  value: [api_ephemeral_disk]

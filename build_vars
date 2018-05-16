@@ -2,3 +2,5 @@ export AWS_DEFAULT_REGION="eu-west-2"
 export AVAILABILITY_ZONE=${AWS_DEFAULT_REGION}a
 export MY_IP="$(curl https://api.ipify.org)/32"
 export STACK_NAME="cf-training"
+export BOSH_ENVIRONMENT=troubleshooting
+export HOSTED_ZONE_ID=Z3LNQL967B717S

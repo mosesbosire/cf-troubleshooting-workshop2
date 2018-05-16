@@ -21,3 +21,7 @@ output "director_private_ip" {
 output "bosh_security_group_name" {
 	value = "${aws_security_group.bosh.name}"
 }
+
+output "system_lb_name" {
+	value = "${aws_elb.cf_sys_lb.name}"
+}

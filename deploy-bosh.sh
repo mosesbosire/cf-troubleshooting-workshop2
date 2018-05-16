@@ -27,9 +27,9 @@ bosh create-env bosh/bosh-deployment/bosh.yml \
     --var-file private_key=credentials/cf-training-default-key \
     -v subnet_id=$(terraform output -state=terraform/.terraform/terraform.tfstate private_subnet_id)
 
-bosh alias-env troubleshooting -e $(terraform output -state=terraform/.terraform/terraform.tfstate director_private_ip) --ca-cert <(bosh int credentials/bosh-creds.yml --path /director_ssl/ca)
+bosh alias-env -e $(terraform output -state=terraform/.terraform/terraform.tfstate director_private_ip) --ca-cert <(bosh int credentials/bosh-creds.yml --path /director_ssl/ca)
 
-BOSH_CLIENT=admin BOSH_CLIENT_SECRET=$(bosh int credentials/bosh-creds.yml --path /admin_password) bosh login -e troubleshooting
+BOSH_CLIENT=admin BOSH_CLIENT_SECRET=$(bosh int credentials/bosh-creds.yml --path /admin_password) bosh login -e $BOSH_ENVIRONMENT
 
 #    user  group other
 #    r+w+x r+w+x r+w+x
