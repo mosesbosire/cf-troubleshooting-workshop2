@@ -1,0 +1,4 @@
+applications:
+- name: hello
+  memory: 1g
+  buildpack: ruby_buildpack
