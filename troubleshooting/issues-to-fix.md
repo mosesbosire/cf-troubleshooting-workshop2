@@ -9,7 +9,7 @@ FAILED
 Error performing request: Get https://api.sys.cf-training.training.armakuni.co.uk/v2/info: dial tcp 35.177.185.23:443: i/o timeout
 ```
 
-## Issue no. 2 - Coonecting to CF (Service Unavailable)
+## Issue no. 2 - Connecting to CF (Service Unavailable)
 
 ```
 cf login -a https://api.sys.cf-training.training.armakuni.co.uk
