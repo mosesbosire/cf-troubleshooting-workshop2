@@ -247,3 +247,201 @@ output "application_lb_name" {
 }
 ```
 
+## Issue no. 7
+
+Run:
+```bash
+cf app hello
+Showing health and status for app hello in org system / space workspace as admin...
+
+name:              hello
+requested state:   started
+instances:         3/4
+usage:             1G x 4 instances
+routes:            test.app.cf-training.training.armakuni.co.uk
+last uploaded:     Wed 16 May 16:38:04 BST 2018
+stack:             cflinuxfs2
+buildpack:         ruby_buildpack
+
+     state     since                  cpu    memory        disk          details
+#0   running   2018-05-17T14:31:50Z   0.0%   19.2M of 1G   87.8M of 1G
+#1   running   2018-05-17T14:31:50Z   0.0%   18.4M of 1G   87.8M of 1G
+#2   running   2018-05-17T14:31:51Z   0.0%   18.4M of 1G   87.8M of 1G
+#3   down      2018-05-17T14:32:14Z   0.0%   0 of 1G       0 of 1G       insufficient resources: memory
+```
+
+As you can see, the issue resides with not having sufficient memory. To fix this, we can either:
+- use a bigger instance type
+- or we can scale out the diego cell instances
+In terms of [pricing](https://www.ec2instances.info/?cost_duration=monthly), it will be mostly the same, but ideally we should opt for scaling out the diego-cell, as this way we ensure the applications are resilient.
+
+To do so, create an ops file to overwrite the diego-cell instance number defined within `cf/cf-deployment/operations/scale-to-one-az.yml`. This new ops file, `cf/operations/scale-to-more-diego-instances.yml` should look like this:
+
+```yml
+---
+- type: replace
+  path: /instance_groups/name=diego-cell/instances
+  value: 2
+```
+
+Make sure to update the CF Bosh deployment for scaling up the diego-cell instance:
+
+```bash
+bosh -e $BOSH_ENVIRONMENT -d cf deploy cf/cf-deployment/cf-deployment.yml \
+  --vars-store credentials/cf-creds.yml \
+  -o cf/cf-deployment/operations/scale-to-one-az.yml \
+  -o cf/cf-deployment/operations/use-compiled-releases.yml \
+  -o cf/cf-deployment/operations/aws.yml \
+  -o cf/operations/rename-disk-labels.yml \
+  -o cf/operations/configure-app-domain.yml \
+  -o cf/operations/scale-to-more-diego-instances.yml \ # scale up the diego-cell here
+  -v system_domain=sys.$STACK_NAME.training.armakuni.co.uk \
+  -v app_domain=app.$STACK_NAME.training.armakuni.co.uk
+```
+
+and run this:
+
+```bash
+./deploy.cf
+```
+
+## Issue no. 8
+
+Identifying the CF SSH endpoint:
+```bash
+cf curl /v2/info
+{
+   "name": "",
+   "build": "",
+   "support": "",
+   "version": 0,
+   "description": "",
+   "authorization_endpoint": "https://login.sys.cf-training.training.armakuni.co.uk",
+   "token_endpoint": "https://uaa.sys.cf-training.training.armakuni.co.uk",
+   "min_cli_version": null,
+   "min_recommended_cli_version": null,
+   "api_version": "2.109.0",
+   "app_ssh_endpoint": "ssh.sys.cf-training.training.armakuni.co.uk:2222", # this is the SSH endpoint
+   "app_ssh_host_key_fingerprint": "ce:a2:5b:8c:9e:fe:fc:69:0a:ed:23:fb:56:f3:df:76",
+   "app_ssh_oauth_client": "ssh-proxy",
+   "doppler_logging_endpoint": "wss://doppler.sys.cf-training.training.armakuni.co.uk:4443",
+   "routing_endpoint": "https://api.sys.cf-training.training.armakuni.co.uk/routing"
+}
+```
+
+The obvious solution would be opening up the port 2222 in the security groups and adding a listener on port 2222 to the `sys` LB, but this would not solve the problem. SSH access does not use the HTTP protocol and therefore is not handled by the same server as all other traffic that reaches the `sys` LB.
+Within `terraform/elb.tf`, add to the `sys` LB the following:
+
+```bash
+	listener {
+		lb_port = 2222
+		lb_protocol = "tcp"
+		instance_port = 2222
+		instance_protocol = "tcp"
+	}
+```
+
+
+After examining cf-deployment.yml we can find out that the server running the CF component `ssh_proxy` is the one called the `scheduler`.
+
+The solution is to define a new SSH ELB, with a listener on port 2222 within `terraform/elb.tf`:
+
+```bash
+resource "aws_elb" "cf_ssh_lb" {
+	name = "cf-ssh-lb"
+	security_groups = ["${aws_security_group.bosh.id}"]
+	subnets = ["${aws_subnet.public.id}"]
+	internal = false
+
+	listener {
+		lb_port = 2222
+		lb_protocol = "tcp"
+		instance_port = 2222
+		instance_protocol = "tcp"
+	}
+
+	health_check {
+    	healthy_threshold   = 2
+    	unhealthy_threshold = 2
+    	timeout             = 3
+    	target              = "TCP:2222"
+    	interval            = 30
+	}
+
+	tags {
+		Name = "${var.stack_name}-cf-ssh-lb"
+	}
+}
+```
+Remark: No SSL certificate is needed as the traffic is not SSL encrypted.
+
+Add an inbound rule for SSH on port 2222 within `terraform/ecurity_groups.tf`:
+
+```bash
+resource "aws_security_group_rule" "bosh_inbound_cf_app_ssh" {
+  security_group_id = "${aws_security_group.bosh.id}"
+  description       = "CF app SSH access"
+  type              = "ingress"
+  protocol          = "tcp"
+  from_port         = 2222
+  to_port           = 2222
+  cidr_blocks       = ["${var.my_ip}"]
+}
+```
+
+Define the SSH specific domain within `terraform/route53.tf`:
+
+```bash
+resource "aws_route53_record" "ssh_domain" {
+	zone_id = "${var.hosted_zone_id}"
+	name = "ssh.sys.${var.stack_name}"
+	type = "CNAME"
+	ttl = 300
+
+	records = [
+		"${aws_elb.cf_ssh_lb.dns_name}"
+	]
+}
+```
+The most specific domain will take precedence over the one we defined for `*.sys.${var.stack_name}`.
+
+Output this SSH LB's name within `terraform/outputs.tf`:
+
+```bash
+output "ssh_lb_name" {
+	value = "${aws_elb.cf_ssh_lb.name}"
+}
+```
+
+Update the cloud config properties with the newly required variable, the `ssh_lb`:
+
+```bash
+bosh -e $BOSH_ENVIRONMENT update-cloud-config cf/cloud-config.yml \
+  -v system_lb=$(terraform output -state=terraform/.terraform/terraform.tfstate system_lb_name) \
+  -v availability_zone=$AVAILABILITY_ZONE \
+  -v private_subnet_range=$(terraform output -state=terraform/.terraform/terraform.tfstate private_subnet_cidr) \
+  -v security_group=$(terraform output -state=terraform/.terraform/terraform.tfstate bosh_security_group_name) \
+  -v gateway_ip=$(terraform output -state=terraform/.terraform/terraform.tfstate private_subnet_gateway_ip) \
+  -v subnet_id=$(terraform output -state=terraform/.terraform/terraform.tfstate private_subnet_id) \
+  -v application_lb=$(terraform output -state=terraform/.terraform/terraform.tfstate application_lb_name) \
+  -v ssh_lb=$(terraform output -state=terraform/.terraform/terraform.tfstate ssh_lb_name) # update here
+```
+
+Update the SSH diego-cell with the corresponding ELB:
+
+```yml
+- name: diego-ssh-proxy-network-properties
+  cloud_properties:
+    elbs: [((ssh_lb))] # this is where you specify the SSH ELB
+```
+
+Redeploy AWS and CF:
+```bash
+./deploy-aws.sh
+./deploy-cf.sh
+```
+
+SSH into your app:
+```bash
+cf ssh hello
+```

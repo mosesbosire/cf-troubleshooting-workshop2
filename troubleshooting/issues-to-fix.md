@@ -61,3 +61,9 @@ OK
 name    requested state   instances   memory   disk   urls
 hello   started           3/4         1G       1G     test.app.cf-training.training.armakuni.co.uk
 ```
+
+# Issue no. 8 - SSH into your app
+
+```bash
+cf ssh hello
+```
