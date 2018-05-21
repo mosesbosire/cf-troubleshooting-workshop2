@@ -9,7 +9,6 @@ TERRAFORM_DIR=terraform
 export TF_DATA_DIR=$TERRAFORM_DIR/.terraform
 
 OUTPUT_PLAN=$TF_DATA_DIR/terraform.tfstate
-VPC_STATE=state/vpc.tfstate
 
 [ ! -d $TF_DATA_DIR ] && terraform init $TERRAFORM_DIR
 
