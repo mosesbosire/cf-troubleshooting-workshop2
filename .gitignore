@@ -1,3 +1,4 @@
 bosh-state.json
 bosh-creds.yml
 .terraform
+credentials/aws_secrets

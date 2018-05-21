@@ -2,8 +2,8 @@
 
 Try to reach the CF API via HTTPS using the configured system domain:
 
-```
-cf login -a https://api.sys.cf-training.training.armakuni.co.uk
+```shell
+cf login -a "https://api.sys.cf-training-${USER}.training.armakuni.co.uk"
 API endpoint: https://api.sys.cf-training.training.armakuni.co.uk
 FAILED
 Error performing request: Get https://api.sys.cf-training.training.armakuni.co.uk/v2/info: dial tcp 35.177.185.23:443: i/o timeout
@@ -11,8 +11,8 @@ Error performing request: Get https://api.sys.cf-training.training.armakuni.co.u
 
 ## Issue no. 2 - Connecting to CF (Service Unavailable)
 
-```
-cf login -a https://api.sys.cf-training.training.armakuni.co.uk
+```shell
+cf login -a "https://api.sys.cf-training-${USER}.training.armakuni.co.uk"
 API endpoint: https://api.sys.cf-training.training.armakuni.co.uk
 FAILED
 Server error, status code: 503, error code: 0, message:
@@ -22,7 +22,8 @@ Server error, status code: 503, error code: 0, message:
 
 Push an existing app to your CF defined space:
 
-```bash
+```shell
+cd app
 cf push
 Pushing from manifest to org system / space workspace as admin...
 
@@ -35,7 +36,7 @@ FAILED
 
 Start trailing your `hello` application logs:
 
-```bash
+```shell
 cf logs hello
 Retrieving logs for app hello in org system / space workspace as admin...
 
@@ -49,7 +50,7 @@ FAILED
 
 # Issue no. 7 - Scale up your app
 
-```bash
+```shell
 cf scale -i 4 hello
 Scaling app hello in org system / space workspace as admin...
 OK
@@ -59,11 +60,11 @@ Getting apps in org system / space workspace as admin...
 OK
 
 name    requested state   instances   memory   disk   urls
-hello   started           3/4         1G       1G     test.app.cf-training.training.armakuni.co.uk
+hello   started           3/4         1G       1G     hello.app.cf-training.training.armakuni.co.uk
 ```
 
 # Issue no. 8 - SSH into your app
 
-```bash
+```shell
 cf ssh hello
 ```
