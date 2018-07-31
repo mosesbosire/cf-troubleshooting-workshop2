@@ -15,15 +15,15 @@ data "aws_ami" "ubuntu" {
 }
 
 resource "aws_instance" "jumpbox" {
-	ami = "${data.aws_ami.ubuntu.id}"
-	instance_type = "t2.micro"
-	key_name = "cf-training-default-key"
+  ami                    = "${data.aws_ami.ubuntu.id}"
+  instance_type          = "t2.micro"
+  key_name               = "cf-training-moses"
   vpc_security_group_ids = ["${aws_security_group.bosh.id}"]
-  subnet_id = "${aws_subnet.public.id}"
+  subnet_id              = "${aws_subnet.public.id}"
 
-	tags {
-		Name = "jumpbox"
-	}
+  tags {
+    Name = "jumpbox"
+  }
 }
 
 # Associating a public IP to our jumbox by creating an AWS Elastic IP. This is an alternative as to setting 'associate_public_ip_address = true` on the `aws_instance` resource. This would generate a random public IP, as opposed to having our IP retained.

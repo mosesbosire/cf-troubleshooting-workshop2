@@ -4,8 +4,8 @@ resource "aws_security_group" "bosh" {
   vpc_id      = "${aws_vpc.training_vpc.id}"
 
   tags {
-    Name      = "${var.stack_name}-bosh"
-	  Role      = "bosh"
+    Name = "${var.stack_name}-bosh"
+    Role = "bosh"
   }
 }
 
@@ -51,21 +51,31 @@ resource "aws_security_group_rule" "bosh_inbound_25555" {
 }
 
 resource "aws_security_group_rule" "bosh_inbound_tcp_65535" {
-  security_group_id        = "${aws_security_group.bosh.id}"
-  description              = "Management and data access"
-  type                     = "ingress"
-  protocol                 = "tcp"
-  from_port                = 0
-  to_port                  = 65535
-  self                     = "true"
+  security_group_id = "${aws_security_group.bosh.id}"
+  description       = "Management and data access"
+  type              = "ingress"
+  protocol          = "tcp"
+  from_port         = 0
+  to_port           = 65535
+  self              = "true"
 }
 
 resource "aws_security_group_rule" "bosh_inbound_udp_65535" {
-  security_group_id        = "${aws_security_group.bosh.id}"
-  description              = "Management and data access"
-  type                     = "ingress"
-  protocol                 = "udp"
-  from_port                = 0
-  to_port                  = 65535
-  self                     = "true"
+  security_group_id = "${aws_security_group.bosh.id}"
+  description       = "Management and data access"
+  type              = "ingress"
+  protocol          = "udp"
+  from_port         = 0
+  to_port           = 65535
+  self              = "true"
+}
+
+resource "aws_security_group_rule" "bosh_inbound_tcp_443" {
+  security_group_id = "${aws_security_group.bosh.id}"
+  description       = "Management and data access"
+  type              = "ingress"
+  protocol          = "tcp"
+  from_port         = 443
+  to_port           = 443
+  cidr_blocks       = ["${var.my_ip}"]
 }

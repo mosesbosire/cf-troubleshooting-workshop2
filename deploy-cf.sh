@@ -5,7 +5,7 @@ set -euo pipefail
 source build_vars
 source credentials/aws_secrets
 
-chmod 600 credentials/cf-training-default-key
+chmod 600 credentials/cf-training-moses.pem
 
 JUMPBOX_IP=$(terraform output -state=terraform/.terraform/terraform.tfstate jumpbox_ip)
 SSH_PIDS="$(lsof -t -i :12345||true)"
@@ -14,7 +14,7 @@ if [ "$SSH_PIDS" != "" ]; then
   kill -9 $SSH_PIDS
 fi
 
-ssh -4 -D 12345 -fNC "ubuntu@$JUMPBOX_IP" -i credentials/cf-training-default-key
+ssh -4 -D 12345 -fNC "ubuntu@$JUMPBOX_IP" -i credentials/cf-training-moses.pem
 export BOSH_ALL_PROXY=socks5://localhost:12345
 
 bosh -e "$BOSH_ENVIRONMENT" update-cloud-config cf/cloud-config.yml \
